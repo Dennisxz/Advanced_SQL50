@@ -423,7 +423,6 @@ FROM Warehouse a
 JOIN Products b ON a.product_id = b.product_id 
 GROUP BY a.name;
 
-
 --1734
 SELECT 
     a.name, 
