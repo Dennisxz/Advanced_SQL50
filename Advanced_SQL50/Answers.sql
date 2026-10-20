@@ -424,11 +424,3 @@ JOIN Products b ON a.product_id = b.product_id
 GROUP BY a.name;
 
 
---1734
-SELECT 
-    a.name, 
-    SUM(b.amount) AS balance 
-FROM Users a 
-JOIN Transactions b ON a.account = b.account 
-GROUP BY a.account 
-HAVING sum(b.amount) > 10000; 
