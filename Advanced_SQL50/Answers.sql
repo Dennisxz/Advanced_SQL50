@@ -431,3 +431,180 @@ FROM Users a
 JOIN Transactions b ON a.account = b.account 
 GROUP BY a.account 
 HAVING sum(b.amount) > 10000; 
+
+-- 1735
+WITH stats AS (
+    SELECT 
+        a.customer_id,
+        a.product_id,
+        b.product_name,
+        RANK() OVER (PARTITION BY a.customer_id ORDER BY COUNT(b.order_id)) DESC) AS rnk 
+    FROM Orders a 
+    JOIN Products b ON a.product_id = b.product_id
+    GROUP BY a.customer_id, a.product_id, b.product_name
+)
+SELECT 
+    customer_id,
+    product_id,
+FROM stats
+WHERE rnk = 1;
+
+--1749 
+SELECT 
+    seller_name 
+FROM Seller 
+WHERE seller_id NOT IN (SELECT DISTINCT seller_id FROM Orders WHERE DATE_FORMAT(sale_date, '%Y') = '2020')
+ORDER BY seller_name;
+
+-- 1837 
+SELECT 
+    date_id,
+    make_name,
+    COUNT(DISTINCT lead_id) AS unique_leads,
+    COUNT(DISTINCT partner_id) AS unique_partners
+FROM DailySales 
+GROUP BY date_id, make_name;
+
+--1842
+SELECT 
+    LEAST(from_id, to_id) AS person1, 
+    GREATEST(from_id, to_id) AS person2,
+    COUNT(*) AS call_count 
+    SUM(duration) AS total_duration
+FROM Calls 
+GROUP BY person1, person2;
+
+-- 1852 
+WITH stats AS (
+    SELECT 
+        user_id,
+        visit_date,
+        LEAD(visit_date, 1, '2021-01-01') OVER (PARTITION BY user_id ORDER BY visit_date) AS next_visit
+    FROM UserVisits 
+)
+SELECT 
+    user_id,
+    MAX(DATEDIFF(next_visit, visit_date)) AS biggest_window 
+FROM stats
+GROUP BY user_id,
+ORDER BY user_id;
+
+-- 1892 
+SELECT 
+    event_day AS day,
+    emp_id,
+    SUM(out_time - in_time) AS total_time
+FROM Employees
+GROUP BY event_dat, emp_id;
+
+--1898 
+SELECT DISTINCT 
+    a.account_id 
+FROM LogInfo a
+JOIN LogInfo b 
+ON a.account_id = b.account_id
+AND a.ip_address != b.ip_address
+AND l1.login <= l2.logout 
+AND l1.logout >= l2.login;
+
+-- 1914
+WITH RECURSIVE subtaskseq AS (
+    SELECT 1 AS subtask_id,
+    UNION ALL 
+    SELECT subtask_id + 1
+    FROM subtaskseq
+    WHERE subtask_id < 20
+),
+possiblesubtask AS (
+    SELECT 
+        a.task_id,
+        b.subtask_id
+    FROM Task a 
+    JOIN subtaskseq b 
+    ON b.subtask_id <= a.subtasks_count 
+)
+SELECT 
+    p.task_id,
+    p.subtask_id
+FROM possiblesubtask p
+LEFT JOIN Executed e 
+ON p.task_id = e.task_id 
+AND p.subtask_id = e.subtask_id 
+WHERE e.subtask_id IS NULL;
+
+--1932
+WITH winners AS (
+    SELECT Wimbledon AS player_id FROM Championships 
+    UNION ALL 
+    SELECT Fr_open AS player_id FROM Championships 
+    UNION ALL 
+    SELECT US_open AS player_id FROM Championships 
+    UNION ALL 
+    SELECT Au_open AS player_id FROM Championships 
+)
+SELECT 
+    a.player_id,
+    a.player_name,
+    COUNT(b.player_id) AS grand_slams_count
+FROM Players a 
+JOIN winners b ON a.player_id = b.player_id 
+GROUP BY a.player_id, a.player_name;
+
+--1948
+SELECT product_id, 'store_1' AS store, store1 AS price FROM Products WHERE store1 IS NOT NULL 
+UNION ALL 
+SELECT product_id, 'store_2' AS store, store2 AS price FROM Products WHERE store2 IS NOT NULL 
+UNION ALL 
+SELECT product_id, 'store_3' AS store, store3 AS price FROM Products WHERE store3 IS NOT NULL;
+
+-- 1974
+SELECT 
+    customer_id 
+FROM Customers 
+WHERE year = 2021
+AND revenue > 0;
+
+-- 1981 
+WITH stats AS (
+    SELECT 
+        transaction_id,
+        DENSE_RANK() OVER (PARTITION BY CAST(day AS DATE) ORDER BY amount DESC) AS rnk
+    FROM Transactions
+)
+SELECT 
+    transaction_id 
+FROM stats 
+WHERE rnk = 1
+ORDER BY transaction_id;
+
+-- 2024
+SELECT 
+    employee_id,
+    CASE 
+        WHEN employee_id % 2 = 0 OR name LIKE 'M%' THEN 0 
+        ELSE salary
+    END AS bonus 
+FROM Employees;
+
+-- 2041
+SELECT 
+    user_id,
+    MAX(time_stamp) AS last_stamp 
+FROM Logins 
+WHERE YEAR(time_stamp) = 2020
+GROUP BY user_id;
+
+-- 2110
+SELECT a.employee_id 
+FROM Employees a
+LEFT JOIN Salaries b ON a.employee_id = b.employee_id 
+WHERE b.salary IS NULL
+
+UNION
+
+SELECT b.employee_id 
+FROM Employees a
+RIGHT JOIN Salaries b ON a.employee_id = b.employee_id 
+WHERE a.name IS NULL
+
+ORDER BY employee_id;
